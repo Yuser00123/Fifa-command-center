@@ -63,7 +63,13 @@ export default function TransportationDashboard({ transports, setTransports, use
         Make it highly practical, clean, and professional. Ensure you speak directly to the fan.
       `;
 
-      const responseText = await generateContentWithResilience(prompt, 'You are an expert FIFA World Cup transport coordinator.');
+      const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
+      const responseText = await generateContentWithResilience(
+        prompt, 
+        'You are an expert FIFA World Cup transport coordinator.',
+        false,
+        userKey
+      );
       setRouteAdvice(responseText);
     } catch (err) {
       console.error('Failed to generate transit advice:', err);
@@ -223,16 +229,16 @@ export default function TransportationDashboard({ transports, setTransports, use
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-300">Transportation Mode</label>
               <div className="grid grid-cols-3 gap-2">
-                {[
+                {([
                   { id: 'metro', name: 'Metro / Rail', icon: RefreshCw },
                   { id: 'shuttle', name: 'Bus Shuttle', icon: Bus },
                   { id: 'car', name: 'Drive / Park', icon: Car },
-                ].map((mode) => {
+                ] as const).map((mode) => {
                   const Icon = mode.icon;
                   return (
                     <button
                       key={mode.id}
-                      onClick={() => setTravelMode(mode.id as any)}
+                      onClick={() => setTravelMode(mode.id)}
                       className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition ${
                         travelMode === mode.id
                           ? 'bg-[#2E7D32]/20 border-[#66BB6A] text-white'

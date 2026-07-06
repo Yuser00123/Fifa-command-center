@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AIRecommendation, NavigationRoute } from '../../types';
+import { AIRecommendation, NavigationRoute, UserRole } from '../../types';
 
 export function getFallbackRecommendation(category: string, role: string): AIRecommendation {
   const nowStr = new Date().toISOString();
@@ -85,8 +85,8 @@ export function getFallbackRecommendation(category: string, role: string): AIRec
   return roleRec || {
     id: `fb-generic-${Date.now()}`,
     title: 'Stadium Operations Alert',
-    targetRole: (role as any) || 'fan',
-    category: (category as any) || 'operations',
+    targetRole: (role as UserRole) || 'fan',
+    category: (category as AIRecommendation['category']) || 'operations',
     urgency: 'low',
     message: 'Operations are proceeding normally. Maintain general security protocols.',
     actionableStep: 'Check visual command map for immediate updates.',

@@ -43,9 +43,15 @@ export default function RecommendationsDashboard({
     setLoading(true);
     setError(null);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const userKey = localStorage.getItem('user_gemini_api_key');
+      if (userKey) {
+        headers['x-gemini-api-key'] = userKey;
+      }
+
       const response = await fetch('/api/recommendations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           zones,
           transports,

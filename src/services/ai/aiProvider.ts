@@ -14,15 +14,16 @@ const MODEL_PRIORITY = [
 export async function generateContentWithResilience(
   prompt: string,
   systemInstruction?: string,
-  jsonMode: boolean = false
+  jsonMode: boolean = false,
+  customApiKey?: string
 ): Promise<string> {
   let lastError: Error | null = null;
 
   for (const modelName of MODEL_PRIORITY) {
     try {
-      const ai = getGeminiClient();
+      const ai = getGeminiClient(customApiKey);
       
-      const config: any = {
+      const config: { temperature: number; systemInstruction?: string; responseMimeType?: string } = {
         temperature: 0.2,
       };
 
@@ -43,9 +44,10 @@ export async function generateContentWithResilience(
       if (response && response.text) {
         return response.text;
       }
-    } catch (err: any) {
-      console.warn(`Model ${modelName} failed. Error: ${err.message || err}`);
-      lastError = err;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`Model ${modelName} failed. Error: ${errorMsg}`);
+      lastError = err instanceof Error ? err : new Error(errorMsg);
       // Continue to next model
     }
   }

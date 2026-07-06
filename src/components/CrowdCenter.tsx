@@ -256,7 +256,7 @@ export default function CrowdCenter({ zones, setZones, incidents, fetchIncidents
                 <select
                   aria-label="Incident Category"
                   value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
+                  onChange={(e) => setFormCategory(e.target.value as typeof formCategory)}
                   className="w-full text-xs bg-white/5 border border-white/10 rounded-lg p-2 text-white"
                 >
                   <option value="crowd" className="bg-[#071A12]">Crowd Queue</option>
@@ -284,11 +284,11 @@ export default function CrowdCenter({ zones, setZones, incidents, fetchIncidents
             <div>
               <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Severity</label>
               <div className="grid grid-cols-3 gap-2">
-                {['low', 'medium', 'high'].map((sev) => (
+                {([ 'low', 'medium', 'high' ] as const).map((sev) => (
                   <button
                     key={sev}
                     type="button"
-                    onClick={() => setFormSeverity(sev as any)}
+                    onClick={() => setFormSeverity(sev)}
                     className={`py-1 rounded text-xs uppercase font-bold border transition ${
                       formSeverity === sev
                         ? sev === 'high'

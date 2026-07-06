@@ -5,18 +5,11 @@
 
 import { GoogleGenAI } from '@google/genai';
 
-let aiInstance: GoogleGenAI | null = null;
-
-export function getGeminiClient(): GoogleGenAI {
-  if (aiInstance) {
-    return aiInstance;
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
+export function getGeminiClient(customApiKey?: string): GoogleGenAI {
+  const apiKey = customApiKey || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-    throw new Error('GEMINI_API_KEY environment variable is not configured');
+    throw new Error('GEMINI_API_KEY is not configured');
   }
 
-  aiInstance = new GoogleGenAI({ apiKey });
-  return aiInstance;
+  return new GoogleGenAI({ apiKey });
 }

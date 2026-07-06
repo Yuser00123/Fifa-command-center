@@ -27,11 +27,14 @@ import {
   Leaf, 
   User, 
   Activity, 
-  Globe2 
+  Globe2,
+  Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ApiKeyOverlay from './components/ApiKeyOverlay';
 
 export default function App() {
+  const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('user_gemini_api_key'));
   const [userRole, setUserRole] = useState<UserRole>('fan');
   const [zones, setZones] = useState<StadiumZone[]>(INITIAL_ZONES);
   const [transports, setTransports] = useState<TransportStatus[]>(INITIAL_TRANSPORTS);
@@ -39,6 +42,16 @@ export default function App() {
   const [accessibilityNeedsActive, setAccessibilityNeedsActive] = useState<boolean>(false);
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [activeTab, setActiveTab] = useState<'command' | 'navigation' | 'assistant' | 'transit' | 'sustainability'>('command');
+
+  const handleKeySubmitted = (key: string) => {
+    localStorage.setItem('user_gemini_api_key', key);
+    setApiKey(key);
+  };
+
+  const handleResetKey = () => {
+    localStorage.removeItem('user_gemini_api_key');
+    setApiKey(null);
+  };
 
   const fetchIncidents = async () => {
     try {
@@ -74,13 +87,22 @@ export default function App() {
         {/* Top Control Bar & Branding */}
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-lg">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#66BB6A] bg-[#66BB6A]/10 px-2.5 py-0.5 rounded-full border border-[#66BB6A]/20">
                 Live Tournament Ops
               </span>
               <span className="text-[10px] uppercase font-extrabold tracking-widest text-sky-400 bg-sky-400/10 px-2.5 py-0.5 rounded-full border border-sky-400/20">
                 FIFA World Cup 2026
               </span>
+              {apiKey && (
+                <button
+                  onClick={handleResetKey}
+                  className="text-[10px] uppercase font-extrabold tracking-widest text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20 px-2.5 py-0.5 rounded-full border border-yellow-400/20 transition flex items-center gap-1.5"
+                  title="Click to reset or modify your Gemini API key"
+                >
+                  <Key className="w-2.5 h-2.5" /> Reset API Key
+                </button>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1.5 tracking-tight flex items-center gap-2.5">
               FIFA COMMAND CENTER AI
@@ -115,18 +137,18 @@ export default function App() {
 
         {/* Navigation Tabs bar */}
         <nav className="grid grid-cols-2 sm:grid-cols-5 gap-2" aria-label="Command Center Modules">
-          {[
+          {([
             { id: 'command', name: 'Command & Incidents', icon: ShieldAlert },
             { id: 'navigation', name: 'Smart Wayfinding', icon: Compass },
             { id: 'assistant', name: 'AI Co-Pilot (Chat)', icon: Globe2 },
             { id: 'transit', name: 'Transit & Parking', icon: Bus },
             { id: 'sustainability', name: 'Sustainability', icon: Leaf },
-          ].map((tab) => {
+          ] as const).map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition ${
                   activeTab === tab.id
                     ? 'bg-[#0F3D2E] border-[#66BB6A] text-white shadow-lg'
@@ -243,6 +265,8 @@ export default function App() {
           </div>
         </footer>
 
+        {/* API Key Modal Gate */}
+        {!apiKey && <ApiKeyOverlay onKeySubmitted={handleKeySubmitted} />}
       </div>
     </div>
   );

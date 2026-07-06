@@ -106,17 +106,20 @@ app.post('/api/recommendations', async (req, res) => {
       return res.status(400).json({ error: 'Missing required state fields' });
     }
 
+    const customApiKey = req.headers['x-gemini-api-key'] as string | undefined;
+
     const recs = await generateRecommendations({
       zones,
       transports,
       sustainability,
       accessibilityNeedsActive: !!accessibilityNeedsActive,
       userRole
-    });
+    }, customApiKey);
 
     res.json(recs);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Internal server error' });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: errorMsg });
   }
 });
 
@@ -127,6 +130,8 @@ app.post('/api/navigation', async (req, res) => {
     if (!source || !destination) {
       return res.status(400).json({ error: 'Source and destination are required' });
     }
+
+    const customApiKey = req.headers['x-gemini-api-key'] as string | undefined;
 
     const prompt = `Generate a personalized, congestion-aware route from "${source}" to "${destination}" inside a FIFA stadium. Accessibility mode is ${accessibility ? 'ON' : 'OFF'}. 
     Provide estimatedTimeMin (number), distanceMeters (number), and routeSteps (string array), crowdLevel ("low" | "medium" | "high").
@@ -144,21 +149,26 @@ app.post('/api/navigation', async (req, res) => {
     const responseText = await generateContentWithResilience(
       prompt,
       'You are an expert FIFA World Cup stadium routing coordinator. Output raw JSON object matching the requested schema strictly. Do not prefix with markdown ticks.',
-      true
+      true,
+      customApiKey
     );
 
     let route;
     try {
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       route = JSON.parse(cleanJson);
+      if (!route || typeof route !== 'object' || !route.routeSteps || !Array.isArray(route.routeSteps)) {
+        throw new Error('Incomplete route object received');
+      }
     } catch (parseErr) {
-      console.warn('Failed to parse Gemini nav route response, using fallback strategy:', parseErr);
+      console.warn('Failed to parse Gemini nav route response or route is incomplete, using fallback strategy:', parseErr);
       route = getFallbackNavigation(source, destination, !!accessibility);
     }
 
     res.json(route);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Internal server error' });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: errorMsg });
   }
 });
 
@@ -170,16 +180,19 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    const customApiKey = req.headers['x-gemini-api-key'] as string | undefined;
+
     const systemInstruction = `You are the Multilingual AI Assistant for FIFA World Cup 2026. 
     The current active language selected is "${language || 'en'}". 
     Respond to the query appropriately using simple terms, clear directions, accessibility hints, or emergency options. 
     Keep the answer concise (2-4 sentences max), polite, positive, and aligned with tournament operations guidelines.
     Respond directly in the requested language: ${language}.`;
 
-    const reply = await generateContentWithResilience(message, systemInstruction);
+    const reply = await generateContentWithResilience(message, systemInstruction, false, customApiKey);
     res.json({ text: reply });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Internal server error' });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: errorMsg });
   }
 });
 

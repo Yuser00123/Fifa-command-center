@@ -15,7 +15,7 @@ export interface RecommendationInput {
   userRole: UserRole;
 }
 
-export async function generateRecommendations(input: RecommendationInput): Promise<AIRecommendation[]> {
+export async function generateRecommendations(input: RecommendationInput, customApiKey?: string): Promise<AIRecommendation[]> {
   const { zones, transports, sustainability, accessibilityNeedsActive, userRole } = input;
   
   // Rule-based base recommendation lists
@@ -151,7 +151,8 @@ export async function generateRecommendations(input: RecommendationInput): Promi
     const responseText = await generateContentWithResilience(
       prompt,
       'You are a professional tournament management assistant. Output valid JSON array only.',
-      true
+      true,
+      customApiKey
     );
 
     if (responseText && responseText.trim() !== '{}' && responseText.trim() !== '') {

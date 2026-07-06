@@ -64,7 +64,9 @@ export default function AIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping]);
 
   const handleSendMessage = async (text: string) => {
@@ -83,9 +85,15 @@ export default function AIAssistant() {
     setIsTyping(true);
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const userKey = localStorage.getItem('user_gemini_api_key');
+      if (userKey) {
+        headers['x-gemini-api-key'] = userKey;
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ message: text, language: lang }),
       });
 
