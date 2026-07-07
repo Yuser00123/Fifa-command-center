@@ -4,6 +4,7 @@
  */
 
 import { useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { StadiumZone } from '../types';
 
 type DensityLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -22,7 +23,7 @@ const DENSITY_CONFIGS: Record<DensityLevel, DensityConfig> = {
 } as const;
 
 export function useDensitySimulation(
-  setZones: React.Dispatch<React.SetStateAction<StadiumZone[]>>
+  setZones: Dispatch<SetStateAction<StadiumZone[]>>
 ) {
   const simulateDensity = useCallback((zoneId: string, level: DensityLevel) => {
     const config = DENSITY_CONFIGS[level];

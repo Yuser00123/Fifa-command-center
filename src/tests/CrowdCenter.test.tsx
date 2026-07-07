@@ -199,6 +199,7 @@ describe('CrowdCenter Component', () => {
         setZones={vi.fn()}
         incidents={[]}
         fetchIncidents={vi.fn()}
+        updateIncidentStatus={vi.fn().mockResolvedValue(true)}
         userRole="fan"
       />
     );

@@ -6,7 +6,6 @@
 export { useIncidentForm, INCIDENT_CATEGORIES, SEVERITY_LEVELS } from './useIncidentForm';
 export { useIncidents } from './useIncidents';
 export { useDensitySimulation } from './useCrowdSimulators';
-export { useCrowdSimulators } from './useCrowdSimulators';
 export { useChatMessages } from './useChatMessages';
 export { useRouteCalculation } from './useRouteCalculation';
 export { useWayfinding } from './useWayfinding';

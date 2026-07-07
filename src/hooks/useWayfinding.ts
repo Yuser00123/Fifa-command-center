@@ -30,7 +30,7 @@ interface UseWayfindingReturn {
   setSource: (source: string) => void;
   setDestination: (destination: string) => void;
   calculateRoute: (src: string, dest: string, accessibility: boolean) => Promise<void>;
-  handleShortcut: (category: ShortcutCategory, accessibilityActive: boolean) => void;
+  handleShortcut: (category: ShortcutCategory, accessibilityActive: boolean) => { newDestination: string; shouldEnableAccessibility: boolean };
   clearRoute: () => void;
 }
 

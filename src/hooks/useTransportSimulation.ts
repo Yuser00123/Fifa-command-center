@@ -4,10 +4,11 @@
  */
 
 import { useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { TransportStatus } from '../types';
 
 export function useTransportSimulation(
-  setTransports: React.Dispatch<React.SetStateAction<TransportStatus[]>>
+  setTransports: Dispatch<SetStateAction<TransportStatus[]>>
 ) {
   const simulateDelay = useCallback((parkingId: string, delayMinutes: number) => {
     setTransports((prev) =>
