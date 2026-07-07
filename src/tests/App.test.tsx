@@ -90,25 +90,36 @@ describe('App Component Integrations', () => {
     localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
     render(<App />);
 
-    // Wait for the async initial incidents fetch to load and settle
-    await screen.findByText('Long queues at North Gate.');
+    // Wait for the lazy-loaded Impact Dashboard to appear (it's now default)
+    await screen.findByText('Challenge Alignment Overview', {}, { timeout: 5000 });
+
+    // Click 'Command & Incidents' tab
+    const commandTab = screen.getByText('Command & Incidents');
+    fireEvent.click(commandTab);
+
+    // Wait for lazy-loaded CrowdCenter to appear and async incidents fetch to settle
+    await screen.findByText('Long queues at North Gate.', {}, { timeout: 5000 });
 
     // Click 'Smart Wayfinding' tab
     const wayfindingTab = screen.getByText('Smart Wayfinding');
     fireEvent.click(wayfindingTab);
 
-    // Verify Navigation Dashboard container is shown
-    expect(screen.getByText(/Intelligent Stadium Wayfinding/i)).toBeInTheDocument();
+    // Wait for lazy-loaded NavigationDashboard to appear
+    await screen.findByText(/Intelligent Stadium Wayfinding/i, {}, { timeout: 5000 });
 
     // Click 'Transit & Parking'
     const transitTab = screen.getByText('Transit & Parking');
     fireEvent.click(transitTab);
-    expect(screen.getByText(/Stadium Transport Status/i)).toBeInTheDocument();
+
+    // Wait for lazy-loaded TransportationDashboard to appear
+    await screen.findByText(/Stadium Transport Status/i, {}, { timeout: 5000 });
 
     // Click 'Sustainability'
     const sustainabilityTab = screen.getByText('Sustainability');
     fireEvent.click(sustainabilityTab);
-    expect(screen.getByText(/Sustainability Insights/i)).toBeInTheDocument();
+
+    // Wait for lazy-loaded SustainabilityInsights to appear
+    await screen.findByText(/Sustainability Insights/i, {}, { timeout: 5000 });
   });
 
   it('polls the /api/incidents endpoint periodically', async () => {

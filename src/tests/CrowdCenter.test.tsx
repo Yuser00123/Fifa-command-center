@@ -39,6 +39,7 @@ describe('CrowdCenter Component', () => {
   it('renders correctly and submits a new incident report log successfully', async () => {
     const setZones = vi.fn();
     const fetchIncidents = vi.fn();
+    const updateIncidentStatus = vi.fn().mockResolvedValue(true);
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -51,6 +52,7 @@ describe('CrowdCenter Component', () => {
         setZones={setZones}
         incidents={sampleIncidents}
         fetchIncidents={fetchIncidents}
+        updateIncidentStatus={updateIncidentStatus}
         userRole="organizer"
       />
     );
@@ -74,13 +76,14 @@ describe('CrowdCenter Component', () => {
       severity: 'medium',
       zoneId: 'zone-north',
     });
-    
+
     expect(fetchIncidents).toHaveBeenCalled();
   });
 
   it('allows staff or organizer to update status and deploy responders', async () => {
     const setZones = vi.fn();
     const fetchIncidents = vi.fn();
+    const updateIncidentStatus = vi.fn().mockResolvedValue(true);
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -93,6 +96,7 @@ describe('CrowdCenter Component', () => {
         setZones={setZones}
         incidents={sampleIncidents}
         fetchIncidents={fetchIncidents}
+        updateIncidentStatus={updateIncidentStatus}
         userRole="staff"
       />
     );
@@ -102,20 +106,14 @@ describe('CrowdCenter Component', () => {
     fireEvent.click(deployBtn);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(updateIncidentStatus).toHaveBeenCalledWith('inc-101', 'responding');
     });
-
-    expect(mockFetch.mock.calls[0][0]).toContain('/api/incidents/inc-101/status');
-    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({
-      status: 'responding',
-    });
-
-    expect(fetchIncidents).toHaveBeenCalled();
   });
 
   it('allows staff or organizers to resolve an incident that is currently responding', async () => {
     const setZones = vi.fn();
     const fetchIncidents = vi.fn();
+    const updateIncidentStatus = vi.fn().mockResolvedValue(true);
 
     const respondingIncidents: IncidentReport[] = [
       {
@@ -129,17 +127,13 @@ describe('CrowdCenter Component', () => {
       },
     ];
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ status: 'resolved' }),
-    });
-
     render(
       <CrowdCenter
         zones={sampleZones}
         setZones={setZones}
         incidents={respondingIncidents}
         fetchIncidents={fetchIncidents}
+        updateIncidentStatus={updateIncidentStatus}
         userRole="organizer"
       />
     );
@@ -148,23 +142,20 @@ describe('CrowdCenter Component', () => {
     fireEvent.click(resolveBtn);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(1);
-    });
-
-    expect(mockFetch.mock.calls[0][0]).toContain('/api/incidents/inc-102/status');
-    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({
-      status: 'resolved',
+      expect(updateIncidentStatus).toHaveBeenCalledWith('inc-102', 'resolved');
     });
   });
 
   it('renders simulator buttons for organizers and updates zone density successfully', () => {
     const setZones = vi.fn();
+    const updateIncidentStatus = vi.fn().mockResolvedValue(true);
     render(
       <CrowdCenter
         zones={sampleZones}
         setZones={setZones}
         incidents={[]}
         fetchIncidents={vi.fn()}
+        updateIncidentStatus={updateIncidentStatus}
         userRole="organizer"
       />
     );
