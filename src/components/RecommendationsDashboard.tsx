@@ -3,10 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AIRecommendation, StadiumZone, TransportStatus, SustainabilityMetrics, UserRole } from '../types';
-import { Sparkles, Map, Users, Accessibility, Bus, Leaf, RefreshCw, Loader as Loader2 } from 'lucide-react';
-import { getApiKey } from '../utils/apiKey';
+import { 
+  Sparkles, 
+  Map, 
+  Users, 
+  Accessibility, 
+  Bus, 
+  CheckCircle, 
+  Leaf, 
+  Clock, 
+  AlertTriangle,
+  RefreshCw,
+  Loader2
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -17,68 +28,23 @@ interface Props {
   userRole: UserRole;
 }
 
-// Category icon mapping - memoized outside component
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  navigation: <Map className="w-4 h-4 text-[#66BB6A]" />,
-  crowd: <Users className="w-4 h-4 text-orange-400" />,
-  accessibility: <Accessibility className="w-4 h-4 text-sky-400" />,
-  transport: <Bus className="w-4 h-4 text-blue-400" />,
-  sustainability: <Leaf className="w-4 h-4 text-[#66BB6A]" />,
-};
-
-const URGENCY_STYLES = {
-  high: 'bg-red-500/20 text-red-400 animate-pulse',
-  medium: 'bg-yellow-500/20 text-yellow-400',
-  low: 'bg-green-500/20 text-green-400',
-} as const;
-
-// Memoized Recommendation Card Component
-const RecommendationCard = memo(function RecommendationCard({ rec }: { rec: AIRecommendation }) {
-  const icon = CATEGORY_ICONS[rec.category] || <Sparkles className="w-4 h-4 text-yellow-400" />;
-  const urgencyStyle = URGENCY_STYLES[rec.urgency];
-
-  return (
-    <div
-      className="p-5 rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-black/30 flex flex-col justify-between space-y-4 hover:border-white/20 transition-all duration-200"
-    >
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="flex items-center gap-1.5 text-xs text-white/80 font-bold capitalize">
-            {icon}
-            {rec.category}
-          </span>
-          <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded ${urgencyStyle}`}>
-            {rec.urgency} Urgency
-          </span>
-        </div>
-        <h4 className="text-sm font-bold text-white mb-1.5">{rec.title}</h4>
-        <p className="text-xs text-gray-300 leading-relaxed">{rec.message}</p>
-      </div>
-      <div className="p-3 rounded-lg bg-[#0F3D2E]/40 border border-[#2E7D32]/30 space-y-1">
-        <span className="text-[9px] text-[#66BB6A] uppercase font-bold tracking-wide block">Actionable Protocol</span>
-        <p className="text-xs text-white font-medium">{rec.actionableStep}</p>
-      </div>
-    </div>
-  );
-});
-
-export default function RecommendationsDashboard({
-  zones,
-  transports,
-  sustainability,
+export default function RecommendationsDashboard({ 
+  zones, 
+  transports, 
+  sustainability, 
   accessibilityNeedsActive,
-  userRole
+  userRole 
 }: Props) {
   const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecommendations = useCallback(async () => {
+  const fetchRecommendations = async () => {
     setLoading(true);
     setError(null);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = getApiKey();
+      const userKey = localStorage.getItem('user_gemini_api_key');
       if (userKey) {
         headers['x-gemini-api-key'] = userKey;
       }
@@ -102,24 +68,28 @@ export default function RecommendationsDashboard({
 
       const data = await response.json();
       setRecommendations(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Error occurred');
+      setError(err.message || 'Error occurred');
     } finally {
       setLoading(false);
     }
-  }, [zones, transports, sustainability, accessibilityNeedsActive, userRole]);
+  };
 
   useEffect(() => {
     fetchRecommendations();
-  }, [fetchRecommendations]);
+  }, [zones, transports, sustainability, accessibilityNeedsActive, userRole]);
 
-  // Memoize recommendation cards
-  const recommendationCards = useMemo(() => {
-    return recommendations.map((rec) => (
-      <RecommendationCard key={rec.id} rec={rec} />
-    ));
-  }, [recommendations]);
+  const getCategoryIcon = (cat: string) => {
+    switch (cat) {
+      case 'navigation': return <Map className="w-4 h-4 text-[#66BB6A]" />;
+      case 'crowd': return <Users className="w-4 h-4 text-orange-400" />;
+      case 'accessibility': return <Accessibility className="w-4 h-4 text-sky-400" />;
+      case 'transport': return <Bus className="w-4 h-4 text-blue-400" />;
+      case 'sustainability': return <Leaf className="w-4 h-4 text-[#66BB6A]" />;
+      default: return <Sparkles className="w-4 h-4 text-yellow-400" />;
+    }
+  };
 
   return (
     <div id="recommendations-dashboard-wrapper" className="space-y-6">
@@ -158,13 +128,48 @@ export default function RecommendationsDashboard({
             {error}. Retrying local guidelines.
           </div>
         ) : (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {recommendationCards}
+            {recommendations.map((rec) => (
+              <div 
+                key={rec.id}
+                className="p-5 rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-black/30 flex flex-col justify-between space-y-4 hover:border-white/20 transition-all duration-200"
+              >
+                <div>
+                  {/* Category & Urgency Badges */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="flex items-center gap-1.5 text-xs text-white/80 font-bold capitalize">
+                      {getCategoryIcon(rec.category)}
+                      {rec.category}
+                    </span>
+                    
+                    <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded ${
+                      rec.urgency === 'high'
+                        ? 'bg-red-500/20 text-red-400 animate-pulse'
+                        : rec.urgency === 'medium'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'bg-green-500/20 text-green-400'
+                    }`}>
+                      {rec.urgency} Urgency
+                    </span>
+                  </div>
+
+                  {/* Message Title & text */}
+                  <h4 className="text-sm font-bold text-white mb-1.5">{rec.title}</h4>
+                  <p className="text-xs text-gray-300 leading-relaxed">{rec.message}</p>
+                </div>
+
+                {/* Actionable Step Card */}
+                <div className="p-3 rounded-lg bg-[#0F3D2E]/40 border border-[#2E7D32]/30 space-y-1">
+                  <span className="text-[9px] text-[#66BB6A] uppercase font-bold tracking-wide block">Actionable Protocol</span>
+                  <p className="text-xs text-white font-medium">{rec.actionableStep}</p>
+                </div>
+              </div>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

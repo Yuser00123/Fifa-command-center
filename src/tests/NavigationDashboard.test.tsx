@@ -197,7 +197,7 @@ describe('NavigationDashboard Component', () => {
     });
 
     expect(screen.getByText('Route Mapping:')).toBeInTheDocument();
-    expect(screen.getAllByText('Go straight').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Turn left').length).toBeGreaterThan(0);
+    expect(screen.getByText('Go straight')).toBeInTheDocument();
+    expect(screen.getByText('Turn left')).toBeInTheDocument();
   });
 });

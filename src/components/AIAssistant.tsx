@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Globe, Sparkles, Circle as HelpCircle, User, Bot, TriangleAlert as AlertTriangle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Globe, Sparkles, HelpCircle, User, Bot, AlertTriangle } from 'lucide-react';
 import { ChatMessage } from '../types';
-import { getApiKey } from '../utils/apiKey';
 import { motion, AnimatePresence } from 'motion/react';
 
 const LANGUAGES = [
@@ -15,8 +14,6 @@ const LANGUAGES = [
   { code: 'fr', name: 'Français 🇫🇷' },
   { code: 'pt', name: 'Português 🇵🇹' },
   { code: 'hi', name: 'हिन्दी 🇮🇳' },
-  { code: 'ar', name: 'العربية 🇸🇦' },
-  { code: 'de', name: 'Deutsch 🇩🇪' },
 ];
 
 const PRESET_QUESTIONS: Record<string, string[]> = {
@@ -50,18 +47,6 @@ const PRESET_QUESTIONS: Record<string, string[]> = {
     'क्या यहाँ व्हीलचेयर सुलभ निकास हैं?',
     'लॉट बी के लिए अगली शटल का समय क्या है?',
   ],
-  ar: [
-    'كيف أجد مقعدي في القطاع 122؟',
-    'أين أقرب محطة طبية؟',
-    'هل هناك مخارج مناسبة للكراسي المتحركة؟',
-    'ما هو وقت الحافلة التالية إلى موقف B؟',
-  ],
-  de: [
-    'Wie finde ich meinen Sitz in Sektor 122?',
-    'Wo ist die nächste medizinische Station?',
-    'Gibt es rollstuhlgerechte Ausgänge?',
-    'Wann fährt der nächste Shuttle zum Parkplatz B?',
-  ],
 };
 
 export default function AIAssistant() {
@@ -84,7 +69,7 @@ export default function AIAssistant() {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = useCallback(async (text: string): Promise<void> => {
+  const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -101,7 +86,7 @@ export default function AIAssistant() {
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = getApiKey();
+      const userKey = localStorage.getItem('user_gemini_api_key');
       if (userKey) {
         headers['x-gemini-api-key'] = userKey;
       }
@@ -128,16 +113,15 @@ export default function AIAssistant() {
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       console.error('Error communicating with AI Assistant:', err);
+      // Fallback response handled locally
       const fallbackReplies: Record<string, string> = {
         en: "I'm having trouble connecting to my central server right now, but standard operations are fully running. Restrooms are open at Sectors 104 and 122, and express shuttles depart every 3 minutes from Gate G.",
         es: "Tengo problemas para conectarme con el servidor, pero las operaciones continúan de forma normal. Los baños están abiertos en los sectores 104 y 122, y los autobuses exprés salen cada 3 minutos de la Puerta G.",
         fr: "Je rencontre des difficultés de connexion, mais le stade fonctionne normalement. Les toilettes sont ouvertes aux secteurs 104 et 122, et les navettes partent toutes les 3 minutes de la Porte G.",
         pt: "Estou com problemas para me conectar, mas o estádio está funcionando normalmente. Os banheiros estão abertos nos setores 104 e 122, e os ônibus expressos partem a cada 3 minutos do Portão G.",
         hi: "सर्वर से कनेक्ट करने में समस्या हो रही है, लेकिन सामान्य संचालन जारी है। सेक्टर 104 और 122 में शौचालय खुले हैं, और गेट जी से हर 3 मिनट में शटल सेवाएं चल रही हैं।",
-        ar: 'أواجه مشكلة في الاتصال بالخادم، لكن العمليات تسير بشكل طبيعي. دورات المياه مفتوحة في القطاعات 104 و122، وتنطلق الحافلات السريعة كل 3 دقائق من البوابة G.',
-        de: 'Ich habe Probleme mit der Verbindung zum Server, aber der Betrieb läuft normal. Toiletten sind in den Sektoren 104 und 122 geöffnet, und Express-Shuttle fahren alle 3 Minuten von Tor G ab.',
       };
-
+      
       const aiMsg: ChatMessage = {
         id: `msg-${Date.now()}-ai`,
         sender: 'ai',
@@ -148,12 +132,12 @@ export default function AIAssistant() {
     } finally {
       setIsTyping(false);
     }
-  }, [lang]);
+  };
 
-  const handleLanguageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>): void => {
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedLang = e.target.value;
     setLang(selectedLang);
-
+    
     // Add dynamic language update system greeting
     const updateGreetings: Record<string, string> = {
       en: 'System Language switched to English. How can I assist you?',
@@ -161,8 +145,6 @@ export default function AIAssistant() {
       fr: 'Langue du système changée en Français. Comment puis-je vous aider?',
       pt: 'Idioma do sistema alterado para Português. Como posso ajudar você?',
       hi: 'भाषा हिन्दी में बदल दी गई है। मैं आपकी क्या सहायता कर सकता हूँ?',
-      ar: 'تم تغيير لغة النظام إلى العربية. كيف يمكنني مساعدتك؟',
-      de: 'Systemsprache auf Deutsch umgestellt. Wie kann ich Ihnen helfen?',
     };
 
     setMessages((prev) => [
@@ -174,16 +156,7 @@ export default function AIAssistant() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
     ]);
-  }, []);
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
-    setInputValue(e.target.value);
-  }, []);
-
-  const handleFormSubmit = useCallback((e: React.FormEvent): void => {
-    e.preventDefault();
-    handleSendMessage(inputValue);
-  }, [handleSendMessage, inputValue]);
+  };
 
   return (
     <div id="ai-assistant-card" className="flex flex-col h-[520px] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md overflow-hidden shadow-2xl">
@@ -283,13 +256,16 @@ export default function AIAssistant() {
 
       {/* Input Form */}
       <form
-        onSubmit={handleFormSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSendMessage(inputValue);
+        }}
         className="flex items-center gap-2 p-3 bg-[#071A12] border-t border-white/10"
       >
         <input
           type="text"
           value={inputValue}
-          onChange={handleInputChange}
+          onChange={(e) => setInputValue(e.target.value)}
           placeholder={`Ask anything in ${LANGUAGES.find((l) => l.code === lang)?.name || 'English'}...`}
           className="flex-1 bg-white/5 border border-white/10 focus:border-[#66BB6A] rounded-xl px-4 py-2 text-sm text-white focus:outline-none transition-all duration-200"
           aria-label="Type your message to the FIFA Assistant"

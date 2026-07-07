@@ -7,7 +7,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
-import crypto from 'crypto';
 import { generateContentWithResilience } from './src/services/ai/aiProvider';
 import { generateRecommendations } from './src/services/recommendations/recommendationEngine';
 import { getFallbackNavigation } from './src/services/ai/fallbackStrategy';
@@ -19,54 +18,6 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-
-// CSRF Token Generation and Verification
-const csrfTokens = new Map<string, { token: string; expires: number }>();
-
-function generateCsrfToken(): string {
-  const token = crypto.randomBytes(32).toString('hex');
-  const expires = Date.now() + 3600000; // 1 hour expiry
-  csrfTokens.set(token, { token, expires });
-  return token;
-}
-
-function validateCsrfToken(token: string): boolean {
-  const stored = csrfTokens.get(token);
-  if (!stored) return false;
-  if (Date.now() > stored.expires) {
-    csrfTokens.delete(token);
-    return false;
-  }
-  return true;
-}
-
-// In-memory Rate Limiting
-const rateLimits = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX = 100; // 100 requests per minute
-
-function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
-  const now = Date.now();
-  const limit = rateLimits.get(ip);
-
-  if (!limit || now > limit.resetTime) {
-    rateLimits.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetTime: now + RATE_LIMIT_WINDOW };
-  }
-
-  if (limit.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0, resetTime: limit.resetTime };
-  }
-
-  limit.count++;
-  return { allowed: true, remaining: RATE_LIMIT_MAX - limit.count, resetTime: limit.resetTime };
-}
-
-// CSRF Token Endpoint
-app.get('/api/csrf-token', (req, res) => {
-  const token = generateCsrfToken();
-  res.json({ csrfToken: token });
-});
 
 // In-memory Incident Database for real-time monitoring and reporting
 let incidentReports: IncidentReport[] = [
@@ -97,36 +48,6 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-});
-
-// Rate Limiting Middleware
-app.use((req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  const { allowed, remaining, resetTime } = checkRateLimit(ip);
-
-  res.setHeader('X-RateLimit-Limit', RATE_LIMIT_MAX.toString());
-  res.setHeader('X-RateLimit-Remaining', remaining.toString());
-  res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime / 1000).toString());
-
-  if (!allowed) {
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-
-  next();
-});
-
-// CSRF Protection Middleware (excludes GET and /api/csrf-token)
-app.use((req, res, next) => {
-  if (req.method === 'GET' || req.path === '/api/csrf-token' || req.path === '/api/health') {
-    return next();
-  }
-
-  const csrfToken = req.headers['x-csrf-token'] as string | undefined;
-  if (!csrfToken || !validateCsrfToken(csrfToken)) {
-    return res.status(403).json({ error: 'Invalid or missing CSRF token' });
-  }
-
   next();
 });
 

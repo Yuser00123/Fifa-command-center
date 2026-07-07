@@ -11,7 +11,6 @@ describe('App Component Integrations', () => {
     vi.clearAllMocks();
     mockFetch.mockReset();
     localStorage.clear();
-    sessionStorage.clear();
 
     // Mock incident API response
     mockFetch.mockResolvedValue({
@@ -42,9 +41,8 @@ describe('App Component Integrations', () => {
     expect(screen.getByText('Access Verification Gate')).toBeInTheDocument();
   });
 
-  it('bypasses ApiKeyOverlay and renders dashboard if api key exists in sessionStorage', async () => {
-    const expires = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
+  it('bypasses ApiKeyOverlay and renders dashboard if api key exists in localStorage', async () => {
+    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
     render(<App />);
 
     expect(screen.queryByText('Access Verification Gate')).not.toBeInTheDocument();
@@ -74,8 +72,7 @@ describe('App Component Integrations', () => {
   });
 
   it('allows switching between roles', async () => {
-    const expires = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
+    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
     render(<App />);
 
     // Volunteer
@@ -90,60 +87,39 @@ describe('App Component Integrations', () => {
   });
 
   it('allows switching between modules / tabs', async () => {
-    const expires = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
+    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
     render(<App />);
 
-    // Wait for the lazy-loaded Impact Dashboard to appear (it's now default)
-    await screen.findByText('Challenge Alignment Overview', {}, { timeout: 5000 });
-
-    // Click 'Command & Incidents' tab
-    const commandTab = screen.getByText('Command & Incidents');
-    fireEvent.click(commandTab);
-
-    // Wait for lazy-loaded CrowdCenter to appear and async incidents fetch to settle
-    await screen.findByText('Long queues at North Gate.', {}, { timeout: 5000 });
+    // Wait for the async initial incidents fetch to load and settle
+    await screen.findByText('Long queues at North Gate.');
 
     // Click 'Smart Wayfinding' tab
     const wayfindingTab = screen.getByText('Smart Wayfinding');
     fireEvent.click(wayfindingTab);
 
-    // Wait for lazy-loaded NavigationDashboard to appear
-    await screen.findByText(/Intelligent Stadium Wayfinding/i, {}, { timeout: 5000 });
+    // Verify Navigation Dashboard container is shown
+    expect(screen.getByText(/Intelligent Stadium Wayfinding/i)).toBeInTheDocument();
 
     // Click 'Transit & Parking'
     const transitTab = screen.getByText('Transit & Parking');
     fireEvent.click(transitTab);
-
-    // Wait for lazy-loaded TransportationDashboard to appear
-    await screen.findByText(/Stadium Transport Status/i, {}, { timeout: 5000 });
+    expect(screen.getByText(/Stadium Transport Status/i)).toBeInTheDocument();
 
     // Click 'Sustainability'
     const sustainabilityTab = screen.getByText('Sustainability');
     fireEvent.click(sustainabilityTab);
-
-    // Wait for lazy-loaded SustainabilityInsights to appear
-    await screen.findByText(/Sustainability Insights/i, {}, { timeout: 5000 });
+    expect(screen.getByText(/Sustainability Insights/i)).toBeInTheDocument();
   });
 
-  it('polls the /api/incidents endpoint periodically when on command tab', { timeout: 20000 }, async () => {
-    const expires = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
-
+  it('polls the /api/incidents endpoint periodically', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
+    
     render(<App />);
-
-    // Switch to command tab to activate polling
-    const commandTab = screen.getByText('Command & Incidents');
-    fireEvent.click(commandTab);
-
-    // Wait for initial fetch to complete
-    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
-
     const initialCalls = mockFetch.mock.calls.length;
 
-    // Wait for next polling interval (10 seconds) - use real timers with act
-    await waitFor(() => {
-      expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(initialCalls + 1);
-    }, { timeout: 15000 });
+    // Fast-forward interval
+    vi.advanceTimersByTime(10000);
+    expect(mockFetch.mock.calls.length).toBe(initialCalls + 1);
   });
 });
