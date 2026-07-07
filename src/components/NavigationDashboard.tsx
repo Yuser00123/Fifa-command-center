@@ -50,10 +50,11 @@ export default function NavigationDashboard({ accessibilityActive, setAccessibil
           <div className="space-y-4">
             {/* Start Point */}
             <div className="space-y-1.5 text-left">
-              <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+              <label htmlFor="nav-start-select" className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-red-400" /> Start Point / Gate
               </label>
               <select
+                id="nav-start-select"
                 aria-label="Start Location"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
@@ -69,10 +70,11 @@ export default function NavigationDashboard({ accessibilityActive, setAccessibil
 
             {/* Destination */}
             <div className="space-y-1.5 text-left">
-              <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+              <label htmlFor="nav-dest-select" className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#66BB6A]" /> Destination Service
               </label>
               <select
+                id="nav-dest-select"
                 aria-label="Destination Location"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}

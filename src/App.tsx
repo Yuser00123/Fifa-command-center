@@ -62,6 +62,7 @@ export default function App() {
   const [accessibilityNeedsActive, setAccessibilityNeedsActive] = useState<boolean>(false);
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [activeTab, setActiveTab] = useState<'command' | 'navigation' | 'assistant' | 'transit' | 'sustainability' | 'impact'>('command');
+  const [serverStatus, setServerStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected');
 
   const handleKeySubmitted = (key: string) => {
     localStorage.setItem('user_gemini_api_key', key);
@@ -80,19 +81,26 @@ export default function App() {
       if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         setIncidents(data);
+        setServerStatus('connected');
       } else {
         console.warn('Received non-JSON response from /api/incidents:', response.status);
+        setServerStatus('disconnected');
       }
-    } catch (err) {
-      console.error('Failed to load incidents from server:', err);
+    } catch (err: any) {
+      console.warn('Ops Sync deferred: server is starting up or temporarily offline.', err.message);
+      setServerStatus('disconnected');
     }
   };
 
   useEffect(() => {
     fetchIncidents();
-    const interval = setInterval(fetchIncidents, 10000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const delay = serverStatus === 'connected' ? 10000 : 2500;
+    const interval = setInterval(fetchIncidents, delay);
+    return () => clearInterval(interval);
+  }, [serverStatus]);
 
   // Simple router capability to intercept /impact directly as requested in Phase 4
   useEffect(() => {
@@ -119,6 +127,18 @@ export default function App() {
               </span>
               <span className="text-[10px] uppercase font-extrabold tracking-widest text-sky-400 bg-sky-400/10 px-2.5 py-0.5 rounded-full border border-sky-400/20">
                 FIFA World Cup 2026
+              </span>
+              <span className={`text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 transition-all duration-300 ${
+                serverStatus === 'connected'
+                  ? 'text-green-400 bg-green-400/10 border-green-400/20'
+                  : serverStatus === 'connecting'
+                  ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
+                  : 'text-red-400 bg-red-400/10 border-red-400/20'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  serverStatus === 'connected' ? 'bg-green-400' : serverStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' : 'bg-red-400 animate-ping'
+                }`} />
+                {serverStatus === 'connected' ? 'Ops Sync Active' : serverStatus === 'connecting' ? 'Syncing...' : 'Ops Offline'}
               </span>
               {apiKey && (
                 <button

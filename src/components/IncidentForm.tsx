@@ -38,8 +38,9 @@ export const IncidentForm = React.memo(function IncidentForm({
     <form onSubmit={onSubmit} className="space-y-3.5 mb-6 p-4 rounded-xl border border-white/10 bg-black/20">
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Category</label>
+          <label htmlFor="incident-category-select" className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Category</label>
           <select
+            id="incident-category-select"
             aria-label="Incident Category"
             value={formCategory}
             onChange={(e) => setFormCategory(e.target.value)}
@@ -53,8 +54,9 @@ export const IncidentForm = React.memo(function IncidentForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Sector Zone</label>
+          <label htmlFor="incident-zone-select" className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Sector Zone</label>
           <select
+            id="incident-zone-select"
             aria-label="Incident Zone"
             value={formZone}
             onChange={(e) => setFormZone(e.target.value)}
@@ -92,8 +94,9 @@ export const IncidentForm = React.memo(function IncidentForm({
       </div>
 
       <div>
-        <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Incident Description</label>
+        <label htmlFor="incident-desc-textarea" className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Incident Description</label>
         <textarea
+          id="incident-desc-textarea"
           value={formDesc}
           onChange={(e) => setFormDesc(e.target.value)}
           placeholder="Leaking faucet or long queues? Enter details..."
