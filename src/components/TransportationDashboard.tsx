@@ -3,21 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { TransportStatus } from '../types';
-import { 
-  Bus, 
-  Car, 
-  Navigation, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  RefreshCw, 
-  ArrowRightLeft, 
-  Sparkles, 
-  Loader2 
-} from 'lucide-react';
+import { Bus, Car, Navigation, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, RefreshCw, ArrowRightLeft, Sparkles, Loader as Loader2 } from 'lucide-react';
 import { generateContentWithResilience } from '../services/ai/aiProvider';
+import { getApiKey } from '../utils/apiKey';
+import { useReducedMotion } from '../hooks';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -31,9 +22,10 @@ export default function TransportationDashboard({ transports, setTransports, use
   const [travelMode, setTravelMode] = useState<'shuttle' | 'car' | 'metro'>('metro');
   const [routeAdvice, setRouteAdvice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   // Simulation controls: update parking spots or transit delays
-  const handleSimulateDelay = (id: string, mins: number) => {
+  const handleSimulateDelay = useCallback((id: string, mins: number): void => {
     setTransports((prev) =>
       prev.map((t) => {
         if (t.parkingId === id) {
@@ -47,9 +39,9 @@ export default function TransportationDashboard({ transports, setTransports, use
         return t;
       })
     );
-  };
+  }, [setTransports]);
 
-  const handleGenerateTravelAdvice = async () => {
+  const handleGenerateTravelAdvice = useCallback(async (): Promise<void> => {
     setLoading(true);
     setRouteAdvice(null);
     try {
@@ -63,7 +55,7 @@ export default function TransportationDashboard({ transports, setTransports, use
         Make it highly practical, clean, and professional. Ensure you speak directly to the fan.
       `;
 
-      const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
+      const userKey = getApiKey() || undefined;
       const responseText = await generateContentWithResilience(
         prompt, 
         'You are an expert FIFA World Cup transport coordinator.',
@@ -77,7 +69,15 @@ export default function TransportationDashboard({ transports, setTransports, use
     } finally {
       setLoading(false);
     }
-  };
+  }, [transports, journeyType, travelMode, setRouteAdvice]);
+
+  const handleJourneyTypeChange = useCallback((type: 'arrival' | 'departure'): void => {
+    setJourneyType(type);
+  }, []);
+
+  const handleTravelModeChange = useCallback((mode: 'shuttle' | 'car' | 'metro'): void => {
+    setTravelMode(mode);
+  }, []);
 
   return (
     <div id="transportation-dashboard-container" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -100,7 +100,7 @@ export default function TransportationDashboard({ transports, setTransports, use
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className={`p-2 rounded-lg bg-white/5 ${t.parkingId === 'transit-metro' ? 'text-blue-400' : 'text-[#66BB6A]'}`}>
-                        {t.parkingId === 'transit-metro' ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Car className="w-4 h-4" />}
+                        {t.parkingId === 'transit-metro' ? <RefreshCw className={`w-4 h-4 ${reducedMotion ? '' : 'animate-spin'}`} /> : <Car className="w-4 h-4" />}
                       </div>
                       <div>
                         <span className="text-sm font-semibold text-white block">{t.name}</span>
@@ -203,7 +203,7 @@ export default function TransportationDashboard({ transports, setTransports, use
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => setJourneyType('arrival')}
+                  onClick={() => handleJourneyTypeChange('arrival')}
                   className={`py-2 rounded-xl text-xs font-bold border transition ${
                     journeyType === 'arrival'
                       ? 'bg-[#2E7D32]/20 border-[#66BB6A] text-white'
@@ -213,7 +213,7 @@ export default function TransportationDashboard({ transports, setTransports, use
                   Arrival to Stadium
                 </button>
                 <button
-                  onClick={() => setJourneyType('departure')}
+                  onClick={() => handleJourneyTypeChange('departure')}
                   className={`py-2 rounded-xl text-xs font-bold border transition ${
                     journeyType === 'departure'
                       ? 'bg-[#2E7D32]/20 border-[#66BB6A] text-white'
@@ -238,7 +238,7 @@ export default function TransportationDashboard({ transports, setTransports, use
                   return (
                     <button
                       key={mode.id}
-                      onClick={() => setTravelMode(mode.id)}
+                      onClick={() => handleTravelModeChange(mode.id)}
                       className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition ${
                         travelMode === mode.id
                           ? 'bg-[#2E7D32]/20 border-[#66BB6A] text-white'

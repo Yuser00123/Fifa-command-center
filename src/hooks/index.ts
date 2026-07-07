@@ -5,7 +5,10 @@
 
 export { useIncidentForm, INCIDENT_CATEGORIES, SEVERITY_LEVELS } from './useIncidentForm';
 export { useIncidents } from './useIncidents';
-export { useDensitySimulation } from './useDensitySimulation';
+export { useDensitySimulation } from './useCrowdSimulators';
+export { useCrowdSimulators } from './useCrowdSimulators';
 export { useChatMessages } from './useChatMessages';
 export { useRouteCalculation } from './useRouteCalculation';
+export { useWayfinding } from './useWayfinding';
+export { useReducedMotion } from './useReducedMotion';
 export { useTransportSimulation } from './useTransportSimulation';

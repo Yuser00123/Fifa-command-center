@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { AIRecommendation, StadiumZone, TransportStatus, SustainabilityMetrics, UserRole } from '../types';
 import { Sparkles, Map, Users, Accessibility, Bus, Leaf, RefreshCw, Loader as Loader2 } from 'lucide-react';
+import { getApiKey } from '../utils/apiKey';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -77,7 +78,7 @@ export default function RecommendationsDashboard({
     setError(null);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = localStorage.getItem('user_gemini_api_key');
+      const userKey = getApiKey();
       if (userKey) {
         headers['x-gemini-api-key'] = userKey;
       }

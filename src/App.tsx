@@ -49,8 +49,36 @@ const TAB_CONFIG = [
 type TabId = typeof TAB_CONFIG[number]['id'];
 type UserRoleType = 'fan' | 'volunteer' | 'staff' | 'organizer';
 
+const SESSION_EXPIRY_HOURS = 24;
+
+function getSessionApiKey(): string | null {
+  const stored = sessionStorage.getItem('api_key_session');
+  if (!stored) return null;
+
+  try {
+    const { key, expires } = JSON.parse(stored);
+    if (Date.now() > expires) {
+      sessionStorage.removeItem('api_key_session');
+      return null;
+    }
+    return key;
+  } catch {
+    sessionStorage.removeItem('api_key_session');
+    return null;
+  }
+}
+
+function setSessionApiKey(key: string): void {
+  const expires = Date.now() + SESSION_EXPIRY_HOURS * 60 * 60 * 1000;
+  sessionStorage.setItem('api_key_session', JSON.stringify({ key, expires }));
+}
+
+function clearSessionApiKey(): void {
+  sessionStorage.removeItem('api_key_session');
+}
+
 export default function App() {
-  const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('user_gemini_api_key'));
+  const [apiKey, setApiKey] = useState<string | null>(() => getSessionApiKey());
   const [userRole, setUserRole] = useState<UserRoleType>('fan');
   const [zones, setZones] = useState<StadiumZone[]>(INITIAL_ZONES);
   const [transports, setTransports] = useState<TransportStatus[]>(INITIAL_TRANSPORTS);
@@ -58,16 +86,19 @@ export default function App() {
   const [accessibilityNeedsActive, setAccessibilityNeedsActive] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabId>('impact');
 
-  // Use custom hook for incidents management with polling
-  const { incidents, fetchIncidents, updateIncidentStatus } = useIncidents(10000);
+  // Use custom hook for incidents management with polling (suspends when not on command tab)
+  const { incidents, fetchIncidents, updateIncidentStatus } = useIncidents({
+    pollInterval: 10000,
+    isActive: activeTab === 'command',
+  });
 
   const handleKeySubmitted = useCallback((key: string) => {
-    localStorage.setItem('user_gemini_api_key', key);
+    setSessionApiKey(key);
     setApiKey(key);
   }, []);
 
   const handleResetKey = useCallback(() => {
-    localStorage.removeItem('user_gemini_api_key');
+    clearSessionApiKey();
     setApiKey(null);
   }, []);
 
@@ -119,6 +150,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#071A12] text-white selection:bg-[#66BB6A] selection:text-black">
+      {/* Skip to Content - Keyboard Navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#66BB6A] focus:text-black focus:font-bold focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Skip to main content
+      </a>
+
       {/* Dynamic Background Accents */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-[#0F3D2E]/20 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] rounded-full bg-[#2E7D32]/10 blur-[100px] pointer-events-none" />
@@ -171,7 +210,7 @@ export default function App() {
         </nav>
 
         {/* Main Tab Panels View Area */}
-        <main className="min-h-[500px]">
+        <main id="main-content" className="min-h-[500px]">
           <AnimatePresence mode="wait">
             {activeTab === 'impact' && (
               <motion.div

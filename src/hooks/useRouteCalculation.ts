@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { NavigationRoute } from '../types';
+import { getApiKey } from '../utils/apiKey';
 
 interface UseRouteCalculationReturn {
   route: NavigationRoute | null;
@@ -29,7 +30,7 @@ export function useRouteCalculation(): UseRouteCalculationReturn {
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = localStorage.getItem('user_gemini_api_key');
+      const userKey = getApiKey();
       if (userKey) headers['x-gemini-api-key'] = userKey;
 
       const response = await fetch('/api/navigation', {

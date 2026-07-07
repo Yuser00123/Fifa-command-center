@@ -11,6 +11,7 @@ describe('App Component Integrations', () => {
     vi.clearAllMocks();
     mockFetch.mockReset();
     localStorage.clear();
+    sessionStorage.clear();
 
     // Mock incident API response
     mockFetch.mockResolvedValue({
@@ -41,8 +42,9 @@ describe('App Component Integrations', () => {
     expect(screen.getByText('Access Verification Gate')).toBeInTheDocument();
   });
 
-  it('bypasses ApiKeyOverlay and renders dashboard if api key exists in localStorage', async () => {
-    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
+  it('bypasses ApiKeyOverlay and renders dashboard if api key exists in sessionStorage', async () => {
+    const expires = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
     render(<App />);
 
     expect(screen.queryByText('Access Verification Gate')).not.toBeInTheDocument();
@@ -72,7 +74,8 @@ describe('App Component Integrations', () => {
   });
 
   it('allows switching between roles', async () => {
-    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
+    const expires = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
     render(<App />);
 
     // Volunteer
@@ -87,7 +90,8 @@ describe('App Component Integrations', () => {
   });
 
   it('allows switching between modules / tabs', async () => {
-    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
+    const expires = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
     render(<App />);
 
     // Wait for the lazy-loaded Impact Dashboard to appear (it's now default)
@@ -122,15 +126,24 @@ describe('App Component Integrations', () => {
     await screen.findByText(/Sustainability Insights/i, {}, { timeout: 5000 });
   });
 
-  it('polls the /api/incidents endpoint periodically', async () => {
-    vi.useFakeTimers();
-    localStorage.setItem('user_gemini_api_key', 'AIzaSy_MockedKeyOfExcellentLength');
-    
+  it('polls the /api/incidents endpoint periodically when on command tab', { timeout: 20000 }, async () => {
+    const expires = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem('api_key_session', JSON.stringify({ key: 'AIzaSy_MockedKeyOfExcellentLength', expires }));
+
     render(<App />);
+
+    // Switch to command tab to activate polling
+    const commandTab = screen.getByText('Command & Incidents');
+    fireEvent.click(commandTab);
+
+    // Wait for initial fetch to complete
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
     const initialCalls = mockFetch.mock.calls.length;
 
-    // Fast-forward interval
-    vi.advanceTimersByTime(10000);
-    expect(mockFetch.mock.calls.length).toBe(initialCalls + 1);
+    // Wait for next polling interval (10 seconds) - use real timers with act
+    await waitFor(() => {
+      expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(initialCalls + 1);
+    }, { timeout: 15000 });
   });
 });

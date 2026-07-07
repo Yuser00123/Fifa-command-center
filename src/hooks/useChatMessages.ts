@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from '../types';
+import { getApiKey } from '../utils/apiKey';
 
 const FALLBACK_REPLIES: Record<string, string> = {
   en: "I'm having trouble connecting to my central server right now, but standard operations are fully running. Restrooms are open at Sectors 104 and 122, and express shuttles depart every 3 minutes from Gate G.",
@@ -12,6 +13,8 @@ const FALLBACK_REPLIES: Record<string, string> = {
   fr: "Je rencontre des difficultés de connexion, mais le stade fonctionne normalement. Les toilettes sont ouvertes aux secteurs 104 et 122, et les navettes partent toutes les 3 minutes de la Porte G.",
   pt: "Estou com problemas para me conectar, mas o estádio está funcionando normalmente. Os banheiros estão abertos nos setores 104 e 122, e os ônibus expressos partem a cada 3 minutos do Portão G.",
   hi: 'सर्वर से कनेक्ट करने में समस्या हो रही है, लेकिन सामान्य संचालन जारी है। सेक्टर 104 और 122 में शौचालय खुले हैं, और गेट जी से हर 3 मिनट में शटल सेवाएं चल रही हैं।',
+  ar: 'أواجه مشكلة في الاتصال بالخادم، لكن العمليات تسير بشكل طبيعي. دورات المياه مفتوحة في القطاعات 104 و122، وتنطلق الحافلات السريعة كل 3 دقائق من البوابة G.',
+  de: 'Ich habe Probleme mit der Verbindung zum Server, aber der Betrieb läuft normal. Toiletten sind in den Sektoren 104 und 122 geöffnet, und Express-Shuttle fahren alle 3 Minuten von Tor G ab.',
 } as const;
 
 export function useChatMessages(defaultLanguage: string = 'en') {
@@ -47,7 +50,7 @@ export function useChatMessages(defaultLanguage: string = 'en') {
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = localStorage.getItem('user_gemini_api_key');
+      const userKey = getApiKey();
       if (userKey) headers['x-gemini-api-key'] = userKey;
 
       const response = await fetch('/api/chat', {

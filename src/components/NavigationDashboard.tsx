@@ -3,22 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { NavigationRoute } from '../types';
+import React from 'react';
 import { NAVIGATION_LOCATIONS } from '../constants/initialState';
-import { 
-  MapPin, 
-  Compass, 
-  Accessibility, 
-  Loader2, 
-  Clock, 
-  Milestone, 
-  Utensils, 
-  PlusCircle, 
-  AlertTriangle, 
-  Activity, 
-  CheckCircle 
-} from 'lucide-react';
+import { useWayfinding } from '../hooks';
+import { MapPin, Compass, Accessibility, Loader as Loader2, Clock, Milestone, Utensils, CirclePlus as PlusCircle, TriangleAlert as AlertTriangle, Activity, CircleCheck as CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -27,59 +15,24 @@ interface Props {
 }
 
 export default function NavigationDashboard({ accessibilityActive, setAccessibilityActive }: Props) {
-  const [source, setSource] = useState(NAVIGATION_LOCATIONS[0]);
-  const [destination, setDestination] = useState(NAVIGATION_LOCATIONS[8]);
-  const [route, setRoute] = useState<NavigationRoute | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    source,
+    destination,
+    route,
+    loading,
+    error,
+    setSource,
+    setDestination,
+    calculateRoute,
+    handleShortcut,
+  } = useWayfinding(NAVIGATION_LOCATIONS[0], NAVIGATION_LOCATIONS[8]);
 
-  const calculateRoute = async (src: string, dest: string, isAcc: boolean) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const userKey = localStorage.getItem('user_gemini_api_key');
-      if (userKey) {
-        headers['x-gemini-api-key'] = userKey;
-      }
-
-      const response = await fetch('/api/navigation', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ source: src, destination: dest, accessibility: isAcc }),
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (!response.ok || !contentType || !contentType.includes('application/json')) {
-        throw new Error('Could not calculate route or received non-JSON format.');
-      }
-
-      const data = await response.json();
-      setRoute(data);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleShortcutClick = (category: string) => {
-    let src = source;
-    let dest = destination;
-
-    if (category === 'medical') {
-      dest = 'Medical Station Alpha (West)';
-    } else if (category === 'food') {
-      dest = 'Food Court West Plaza';
-    } else if (category === 'lift') {
-      dest = 'Main Accessibility Lift Lobby 3';
+  const handleShortcutClick = (category: 'medical' | 'food' | 'lift' | 'seat') => {
+    const { newDestination, shouldEnableAccessibility } = handleShortcut(category, accessibilityActive);
+    if (shouldEnableAccessibility) {
       setAccessibilityActive(true);
-    } else if (category === 'seat') {
-      dest = 'Sector 122 Standard Seating';
     }
-
-    setDestination(dest);
-    calculateRoute(src, dest, accessibilityActive);
+    calculateRoute(source, newDestination, shouldEnableAccessibility || accessibilityActive);
   };
 
   return (
@@ -290,12 +243,12 @@ export default function NavigationDashboard({ accessibilityActive, setAccessibil
                 {/* Step-by-Step Directions */}
                 <div className="mt-6 space-y-4">
                   <span className="text-xs font-bold text-gray-300 block uppercase tracking-wider">Navigation Instructions</span>
-                  <div className="relative pl-6 border-l border-white/15 space-y-4">
+                  <div className="relative pl-6 border-l border-white/15 space-y-4" role="list" aria-label="Route steps">
                     {route.routeSteps.map((step, idx) => (
-                      <div key={idx} className="relative group">
+                      <div key={idx} className="relative group" role="listitem">
                         {/* Node marker */}
-                        <div className="absolute -left-[30px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-[#66BB6A] bg-[#071A12] flex items-center justify-center group-hover:scale-110 transition duration-200" />
-                        
+                        <div className="absolute -left-[30px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-[#66BB6A] bg-[#071A12] flex items-center justify-center group-hover:scale-110 transition duration-200" aria-hidden="true" />
+
                         <div className="p-2.5 rounded-lg hover:bg-white/5 transition duration-200">
                           <span className="text-[10px] font-mono text-[#66BB6A] block">STEP {idx + 1}</span>
                           <p className="text-sm text-gray-200">{step}</p>
@@ -303,6 +256,27 @@ export default function NavigationDashboard({ accessibilityActive, setAccessibil
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Accessible Route Table for Screen Readers */}
+                <div className="sr-only" aria-live="polite">
+                  <table aria-label="Navigation route summary">
+                    <caption>Route from {route.source} to {route.destination}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Step</th>
+                        <th scope="col">Direction</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {route.routeSteps.map((step, idx) => (
+                        <tr key={idx}>
+                          <td>{idx + 1}</td>
+                          <td>{step}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
