@@ -3,21 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { SustainabilityMetrics } from '../types';
 import { 
   Leaf, 
   Trash2, 
   Zap, 
   Flame, 
-  HelpCircle, 
   AlertCircle, 
   TrendingDown, 
-  TrendingUp,
   Sparkles,
   Award
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useSustainability } from '../hooks/useSustainability';
 
 interface Props {
   metrics: SustainabilityMetrics;
@@ -25,29 +23,12 @@ interface Props {
 }
 
 export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
-  const [pledged, setPledged] = useState(false);
-
-  // Derive important stats
-  const wasteDiversionRate = metrics.wasteGeneratedKg > 0 
-    ? (metrics.wasteRecycledKg / metrics.wasteGeneratedKg) * 100 
-    : 0;
-
-  // Calculate live score: combining recycling, renewable energy percentage, and low emissions multiplier
-  const scoreBase = (wasteDiversionRate + metrics.renewableEnergyPercentage) / 2;
-  const emissionsBonus = Math.max(0, 30 - (metrics.transitEmissionsCo2Kg / 40));
-  const sustainabilityScore = Math.min(100, Math.round(scoreBase + emissionsBonus));
-
-  const handleSimulateEcoPledge = () => {
-    if (pledged) return;
-    
-    setPledged(true);
-    setMetrics((prev) => ({
-      ...prev,
-      wasteRecycledKg: prev.wasteRecycledKg + 600, // diversion increases
-      renewableEnergyPercentage: Math.min(100, prev.renewableEnergyPercentage + 15), // renewable increases
-      transitEmissionsCo2Kg: Math.max(200, prev.transitEmissionsCo2Kg - 150), // carbon drops due to mass transit use
-    }));
-  };
+  const {
+    pledged,
+    wasteDiversionRate,
+    sustainabilityScore,
+    handleSimulateEcoPledge,
+  } = useSustainability({ metrics, setMetrics });
 
   const ecoRecommendations = [
     {
@@ -76,7 +57,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
           <h3 className="text-lg font-semibold text-white mb-1.5 flex items-center gap-2">
             <Leaf className="w-5 h-5 text-[#66BB6A]" /> Sustainability Insights
           </h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 text-left">
             Real-time assessment of waste diversion targets, clean power grids, and mass transit carbon emission reduction programs.
           </p>
         </div>
@@ -87,7 +68,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
             <div className="w-12 h-12 rounded-full bg-[#66BB6A]/10 border border-[#66BB6A]/30 flex items-center justify-center text-[#66BB6A]">
               <Award className="w-6 h-6" />
             </div>
-            <div>
+            <div className="text-left">
               <span className="text-[10px] text-gray-400 block uppercase font-bold">FIFA Stadium Performance Rating</span>
               <span className="text-xl font-bold text-white">Green Operations Index</span>
             </div>
@@ -111,7 +92,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
               <Trash2 className="w-4 h-4" />
               <span className="text-xs font-semibold text-white">Trash Diversion</span>
             </div>
-            <div>
+            <div className="text-left">
               <span className="text-lg font-bold text-white block font-mono">
                 {wasteDiversionRate.toFixed(1)}%
               </span>
@@ -130,7 +111,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
               <Zap className="w-4 h-4" />
               <span className="text-xs font-semibold text-white">Renewable Energy</span>
             </div>
-            <div>
+            <div className="text-left">
               <span className="text-lg font-bold text-white block font-mono">
                 {metrics.renewableEnergyPercentage}%
               </span>
@@ -149,7 +130,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
               <Flame className="w-4 h-4" />
               <span className="text-xs font-semibold text-white">Carbon Footprint</span>
             </div>
-            <div>
+            <div className="text-left">
               <span className="text-lg font-bold text-white block font-mono">
                 {metrics.transitEmissionsCo2Kg} kg
               </span>
@@ -194,13 +175,13 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
           <h3 className="text-lg font-semibold text-white mb-1.5 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#66BB6A]" /> Sustainability Recommendations
           </h3>
-          <p className="text-xs text-gray-400 mb-5">
+          <p className="text-xs text-gray-400 mb-5 text-left">
             Gemini-generated actionable strategies to lower carbon intensity, divert waste, and decrease power grids.
           </p>
 
           <div className="space-y-4">
             {ecoRecommendations.map((rec, index) => (
-              <div key={index} className="p-3.5 rounded-xl border border-white/5 bg-black/15 flex gap-3">
+              <div key={index} className="p-3.5 rounded-xl border border-white/5 bg-black/15 flex gap-3 text-left">
                 <div className="w-8 h-8 rounded-lg bg-[#66BB6A]/10 border border-[#66BB6A]/20 flex items-center justify-center text-[#66BB6A] flex-shrink-0">
                   <Leaf className="w-4 h-4" />
                 </div>
@@ -216,7 +197,7 @@ export default function SustainabilityInsights({ metrics, setMetrics }: Props) {
           </div>
         </div>
 
-        <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2.5 mt-6 text-[11px] text-gray-400">
+        <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2.5 mt-6 text-[11px] text-gray-400 text-left">
           <AlertCircle className="w-4 h-4 text-[#66BB6A]" />
           <span>All targets are synchronized with standard FIFA World Cup Green legacy metrics.</span>
         </div>

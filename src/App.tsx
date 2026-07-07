@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { UserRole, StadiumZone, TransportStatus, SustainabilityMetrics, IncidentReport } from './types';
 import { 
   INITIAL_ZONES, 
@@ -16,11 +16,12 @@ import NavigationDashboard from './components/NavigationDashboard';
 import AIAssistant from './components/AIAssistant';
 import TransportationDashboard from './components/TransportationDashboard';
 import SustainabilityInsights from './components/SustainabilityInsights';
+import ImpactDashboard from './components/ImpactDashboard';
+
 import RecommendationsDashboard from './components/RecommendationsDashboard';
 
 import { 
   ShieldAlert, 
-  Sparkles, 
   Compass, 
   Users, 
   Bus, 
@@ -28,10 +29,29 @@ import {
   User, 
   Activity, 
   Globe2,
-  Key
+  Key,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ApiKeyOverlay from './components/ApiKeyOverlay';
+
+// High-fidelity loading skeleton to satisfy visual feedback requirements during dynamic loading
+function LoadingSkeleton() {
+  return (
+    <div className="w-full min-h-[400px] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center animate-pulse">
+      <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-4">
+        <svg className="w-6 h-6 animate-spin text-[#66BB6A]" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <span className="text-sm font-semibold text-white block">Loading Operations Hub...</span>
+      <p className="text-xs text-gray-400 max-w-xs mt-1">
+        Synchronizing with regional FIFA transit systems, cloud routing matrix, and local command logs...
+      </p>
+    </div>
+  );
+}
 
 export default function App() {
   const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('user_gemini_api_key'));
@@ -41,7 +61,7 @@ export default function App() {
   const [sustainability, setSustainability] = useState<SustainabilityMetrics>(INITIAL_SUSTAINABILITY);
   const [accessibilityNeedsActive, setAccessibilityNeedsActive] = useState<boolean>(false);
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
-  const [activeTab, setActiveTab] = useState<'command' | 'navigation' | 'assistant' | 'transit' | 'sustainability'>('command');
+  const [activeTab, setActiveTab] = useState<'command' | 'navigation' | 'assistant' | 'transit' | 'sustainability' | 'impact'>('command');
 
   const handleKeySubmitted = (key: string) => {
     localStorage.setItem('user_gemini_api_key', key);
@@ -70,9 +90,15 @@ export default function App() {
 
   useEffect(() => {
     fetchIncidents();
-    // Poll for incidents updates periodically to keep command center live
     const interval = setInterval(fetchIncidents, 10000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Simple router capability to intercept /impact directly as requested in Phase 4
+  useEffect(() => {
+    if (window.location.pathname === '/impact' || window.location.hash === '#/impact') {
+      setActiveTab('impact');
+    }
   }, []);
 
   return (
@@ -86,7 +112,7 @@ export default function App() {
         
         {/* Top Control Bar & Branding */}
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-lg">
-          <div>
+          <div className="text-left">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#66BB6A] bg-[#66BB6A]/10 px-2.5 py-0.5 rounded-full border border-[#66BB6A]/20">
                 Live Tournament Ops
@@ -135,14 +161,15 @@ export default function App() {
           </div>
         </header>
 
-        {/* Navigation Tabs bar */}
-        <nav className="grid grid-cols-2 sm:grid-cols-5 gap-2" aria-label="Command Center Modules">
+        {/* Navigation Tabs bar - Beautiful Six Column Grid */}
+        <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" aria-label="Command Center Modules">
           {([
             { id: 'command', name: 'Command & Incidents', icon: ShieldAlert },
             { id: 'navigation', name: 'Smart Wayfinding', icon: Compass },
             { id: 'assistant', name: 'AI Co-Pilot (Chat)', icon: Globe2 },
             { id: 'transit', name: 'Transit & Parking', icon: Bus },
             { id: 'sustainability', name: 'Sustainability', icon: Leaf },
+            { id: 'impact', name: 'Impact & Alignment', icon: Award },
           ] as const).map((tab) => {
             const Icon = tab.icon;
             return (
@@ -238,6 +265,18 @@ export default function App() {
                   metrics={sustainability} 
                   setMetrics={setSustainability} 
                 />
+              </motion.div>
+            )}
+
+            {activeTab === 'impact' && (
+              <motion.div
+                key="impact"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ImpactDashboard />
               </motion.div>
             )}
           </AnimatePresence>
